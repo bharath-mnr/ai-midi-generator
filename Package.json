@@ -1,0 +1,17 @@
+{
+  "name": "ai-midi-generator",
+  "version": "1.0.0",
+  "description": "A full-stack AI midi generator.",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run start --prefix frontend\" \"npm run start --prefix backend\"",
+    "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

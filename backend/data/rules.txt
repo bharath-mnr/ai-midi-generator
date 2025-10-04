@@ -1,0 +1,561 @@
+# COMPLETE TEXT-BASED MIDI FORMAT SPECIFICATION
+
+## METADATA REQUIREMENTS
+
+```
+Tempo: [NUMBER]        # 20-300 BPM (required)
+TimeSig: [NUM]/[DEN]   # Time signature (required)  
+Key: [KEY]             # C, C#, Db, D, etc. (optional, default: C)
+```
+
+## TIME SIGNATURE SUBDIVISIONS
+
+- **4/4 time** = 16 subdivisions per bar
+- **3/4 time** = 12 subdivisions per bar  
+- **2/4 time** = 8 subdivisions per bar
+- **6/8 time** = 12 subdivisions per bar
+- **12/8 time** = 12 subdivisions per bar (compound time)
+
+**CRITICAL:** Each note line must have EXACTLY the required subdivision count.
+
+### TIME SIGNATURE TO SUBDIVISION MAPPING
+
+| Time Signature | Subdivisions | Beat Structure | Notes |
+|----------------|--------------|----------------|--------|
+| 4/4            | 16           | 4 beats × 4    | Most common |
+| 3/4            | 12           | 3 beats × 4    | Waltz time |
+| 2/4            | 8            | 2 beats × 4    | March time |
+| 6/8            | 12           | 2 beats × 6    | Compound duple |
+| 12/8           | 12           | 4 beats × 3    | Compound quadruple |
+
+### SUBDIVISION CALCULATION LOGIC
+
+```
+For simple time signatures (denominator = 4):
+    subdivisions = numerator × 4
+
+For compound time signatures (denominator = 8):
+    if numerator = 6: subdivisions = 12
+    if numerator = 12: subdivisions = 12
+```
+
+## BAR STRUCTURE
+
+```
+Bar: [POSITIVE_INTEGER]
+[NOTE_NAME]: [SUBDIVISION_TOKENS_WITH_PROPER_SPACING]
+```
+
+**Note Name Format:** `[A-G][#|b]?[-]?[0-9]` (e.g., C4, A#3, Bb-1)  
+**Octave Range:** -1 to 9
+
+## SPACING PATTERNS
+
+### GENERAL SPACING RULES
+
+**Beat Groups:** Used for 4/4 and 3/4 time signatures only
+**Single Spacing:** Used for all other time signatures
+**Separator:** 3 or more consecutive spaces between beat groups
+**Token Spacing:** Single space between tokens within beat groups
+
+### 4/4 Time (16 subdivisions)
+
+#### Visual Layout
+```
+Column:  1 2 3 4   5 6 7 8   9 10 11 12   13 14 15 16
+Beat:    1 e & a   2 e & a   3 e & a      4 e & a
+Group:   |-------|-------|--------|-------|
+         Beat 1    Beat 2    Beat 3      Beat 4
+```
+
+#### Format Requirements
+- **4 beat groups** exactly
+- **4 subdivisions per beat group**
+- **3+ spaces between groups** (recommended: 3 spaces)
+- **1 space between tokens** within each group
+
+```
+Beat Groups: [1 2 3 4]   [5 6 7 8]   [9 10 11 12]   [13 14 15 16]
+Spacing:     beat1       beat2       beat3          beat4
+Separator:   3+ spaces between beat groups
+```
+
+### 3/4 Time (12 subdivisions)
+
+#### Visual Layout
+```
+Column:  1 2 3 4   5 6 7 8   9 10 11 12
+Beat:    1 e & a   2 e & a   3 e & a
+Group:   |-------|-------|-------|
+         Beat 1    Beat 2    Beat 3
+```
+
+#### Format Requirements
+- **3 beat groups** exactly
+- **4 subdivisions per beat group**
+- **3+ spaces between groups**
+- **1 space between tokens** within each group
+
+```
+Beat Groups: [1 2 3 4]   [5 6 7 8]   [9 10 11 12]
+Spacing:     beat1       beat2       beat3
+Separator:   3+ spaces between beat groups
+```
+
+### Other Time Signatures (2/4, 6/8, 12/8)
+
+#### Format Requirements
+- **Single space separation** between all tokens
+- **No beat grouping** required
+
+## SYMBOL DICTIONARY
+
+### BASIC STRUCTURE
+```
+Bar: [POSITIVE_INTEGER]
+[NOTE_NAME]: [SUBDIVISION_TOKENS]
+```
+
+**Note Name Format:** `[A-G][#|b]?[-]?[0-9]`
+- Examples: `C4`, `A#3`, `Bb-1`, `F#5`
+- Octave Range: -1 to 9
+- Enharmonic spellings allowed: `C#` = `Db`, `A#` = `Bb`
+
+### 1. SILENCE SYMBOLS
+
+#### Pure Rest
+- **`.`** → Complete silence for full subdivision
+- Usage: One token per subdivision
+- Cannot combine with other symbols
+
+#### Sustain Continuation  
+- **`~`** → Continue previous note through full subdivision (100%)
+- **`~[0-100]`** → Continue previous note for specified percentage
+- Examples:
+  - `~` = sustain full subdivision
+  - `~45` = sustain 45%, then silence
+  - `~75` = sustain 75%, then silence
+
+**CRITICAL:** Sustain must be separate token (space required before `~`)
+
+### 2. BASIC NOTE SYMBOLS
+
+#### Default Note
+- **`X`** → Note with velocity 100, full subdivision duration
+
+#### Velocity-Specific Notes
+- **`X[1-127]`** → Note with specific MIDI velocity
+- Examples: `X60`, `X127`, `X1`
+- Range: 1-127 (MIDI standard)
+
+### 3. TIMING MODIFICATION SYMBOLS
+
+#### Right Offset (Late Start)
+- **`X[vel]XR[0-100]`** → Rest first, then note
+- Format: Rest 0-R%, Note R%-100%
+- Examples:
+  - `XR25` → Rest 0-25%, note 25-100% (velocity 100)
+  - `X80XR50` → Rest 0-50%, note 50-100% (velocity 80)
+
+#### Left Offset (Early Start)
+- **`X[vel]XL[0-100]`** → Note starts early into previous subdivision
+- Implementation: Timing adjustment for note start
+- Examples:
+  - `XL10` → Note starts 10% early
+  - `X60XL25` → Note with velocity 60, starts 25% early
+
+### 4. DURATION CONTROL SYMBOLS
+
+#### Short Notes (From Start)
+- **`XE[0-100]`** → Note from 0% to E% of subdivision
+- **`X[vel]XE[0-100]`** → Short note with specific velocity
+- Examples:
+  - `XE50` → Note 0-50%, silence 50-100%
+  - `X80XE30` → Velocity 80 note, 0-30%, silence 30-100%
+
+#### Sequential Short Notes
+- **`XE[n]XE[m]`** → Multiple short notes in sequence
+- Rules: Sum of percentages ≤ 100%
+- Timing: Second note starts where first ends
+- Examples:
+  - `XE30XE50` → Note 0-30%, note 30-80%, silence 80-100%
+  - `XE25XE25XE50` → Three sequential notes (sum=100%)
+
+### 5. POSITIONED NOTE SYMBOLS
+
+#### Positioned Rest + Note
+- **`XO[offset]XE[duration]`** → Rest, then note at specific position
+- Format: Rest 0-offset%, Note offset% to (offset+duration)%
+- Examples:
+  - `XO40XE30` → Rest 0-40%, note 40-70%, rest 70-100%
+  - `XO25XE50` → Rest 0-25%, note 25-75%, rest 75-100%
+
+#### Complex Positioned Patterns
+- **Multiple `XO...XE` pairs** → Alternating rest/note patterns
+- Example: `XO25XE25XO25XE25` → 25% rest, 25% note, 25% rest, 25% note
+
+## STACKING VALIDATION RULES
+
+### FUNDAMENTAL PRINCIPLES
+
+1. **One Full Note Maximum:** Only one full-duration note per subdivision
+2. **Duration Limits:** Total time coverage cannot exceed 100% of subdivision
+3. **No Overlaps:** Multiple notes cannot occupy the same time period
+4. **Sustain Separation:** Sustain markers must be separate tokens (space required)
+
+### FULL NOTE RULES
+
+#### Definition
+Full notes occupy entire subdivision duration (unless modified by timing offsets)
+
+- `X` (basic note)
+- `X[velocity]` (velocity-specific note)
+- `X[vel]XR[offset]` (right-offset note)
+- `X[vel]XL[offset]` (left-offset note)
+
+#### Restrictions
+- **Maximum:** 1 full note per subdivision
+- **Cannot combine with:** Other full notes, short notes (XE), positioned notes (XO)
+- **Can combine with:** Sustain markers (as separate tokens)
+
+#### Valid Full Note Examples
+```
+X           # Basic full note
+X80         # Full note with velocity 80
+X100XR25    # Full note starting at 25%
+X60 ~       # Full note + sustain (separate tokens)
+```
+
+#### Invalid Full Note Examples
+```
+X60X80      # Two full notes ❌
+X60XE50     # Full + short note ❌
+X60XO25XE30 # Full + positioned ❌
+X60~        # Glued sustain ❌
+```
+
+### SHORT NOTE RULES (XE)
+
+#### Definition
+Short notes occupy specified percentage from subdivision start
+
+- `XE[0-100]` (duration from 0%)
+- `X[vel]XE[0-100]` (with specific velocity)
+
+#### Stacking Rules
+- **Sequential timing:** Second note starts where first ends
+- **Sum limitation:** Total duration ≤ 100%
+- **No gaps allowed:** Notes must be consecutive
+
+#### Valid Short Note Stacks
+```
+XE50            # Single short note (0-50%)
+XE30XE50        # Two notes (0-30%, 30-80%)
+XE25XE25XE50    # Three notes (0-25%, 25-50%, 50-100%)
+XE20XE20XE60    # Three notes totaling 100%
+```
+
+#### Invalid Short Note Stacks
+```
+XE60XE50        # Sum=110% > 100% ❌
+XE30XE30XE50    # Sum=110% > 100% ❌
+XE50 XE30       # Gap/overlap ambiguity ❌
+```
+
+### POSITIONED NOTE RULES (XO...XE)
+
+#### Definition
+Notes at specific positions within subdivision
+
+- `XO[offset]XE[duration]` (rest 0-offset%, note offset% to offset+duration%)
+
+#### Stacking Rules
+- **Multiple allowed:** If no time overlaps
+- **Position validation:** offset + duration ≤ 100%
+- **Overlap checking:** No two positioned notes can share time
+
+#### Valid Positioned Note Examples
+```
+XO40XE30                    # Note 40-70%
+XO25XE25XO25XE25           # Alternating pattern
+XO10XE20 XO50XE30          # Two positioned notes (10-30%, 50-80%)
+```
+
+#### Invalid Positioned Note Examples
+```
+XO60XE55        # 60+55=115% > 100% ❌
+XO30XE40 XO50XE30 # Overlap: 30-70% conflicts with 50-80% ❌
+```
+
+### MIXED STACKING RULES
+
+#### Short + Positioned (Valid if no overlap)
+```
+XE30 XO50XE20   # Note 0-30% + positioned note 50-70% ✓
+XE40 XO60XE30   # Note 0-40% + positioned note 60-90% ✓
+```
+
+#### Short + Positioned (Invalid - overlap)
+```
+XE50 XO30XE40   # 0-50% overlaps with 30-70% ❌
+XE60 XO40XE50   # 0-60% overlaps with 40-90% ❌
+```
+
+### SUSTAIN RULES
+
+#### Separation Requirement
+Sustain markers MUST be separate tokens with space separation.
+
+#### Valid Sustain Patterns
+```
+X80 ~           # Full note + full sustain next subdivision
+X60 ~50         # Full note + 50% sustain next subdivision
+XE30 ~          # Short note + sustain
+~ XE60          # Sustain 100% + new short note 
+~45 XE55        # Sustain 45% + new note 0-55%
+```
+
+#### Invalid Sustain Patterns
+```
+X80~            # No space before sustain ❌
+X80~50          # No space before sustain ❌  
+~X60            # No space after sustain ❌
+X80~X60         # Glued sustain between notes ❌
+```
+
+### VALID COMBINATIONS
+
+#### Velocity + Offset:
+```
+X80XR25    → Velocity 80, right offset 25%
+X100XL15   → Velocity 100, left offset 15%
+```
+
+#### Multiple Short Notes:
+```
+XE30XE40   → Sequential notes (0-30%, 30-70%)
+XE20XE30XE50 → Three notes totaling 100%
+```
+
+#### Positioned + Short (No Overlap):
+```
+XE30 XO50XE20  → Note 0-30% + positioned note 50-70%
+```
+
+#### Note + Sustain (Separate Tokens):
+```
+X80 ~      → Start note, sustain next subdivision
+X60 ~45    → Start note, sustain 45% of next subdivision
+```
+
+### INVALID COMBINATIONS
+
+#### Multiple Full Notes:
+```
+X60X80     ❌ Only one full note per subdivision
+```
+
+#### Full + Short Mix:
+```
+X60XE50    ❌ Cannot combine full note with short duration
+```
+
+#### Offset + Duration:
+```
+X60XR40XE30 ❌ Cannot combine XR offset with XE duration
+```
+
+#### Glued Sustain:
+```
+X80~       ❌ Sustain must be separate token
+X80~X60    ❌ Cannot glue sustain to next note  
+~X80       ❌ Cannot glue sustain to current note
+```
+
+#### Time Overflow:
+```
+XO60XE55   ❌ Position 60% + duration 55% = 115% > 100%
+XE60XE50   ❌ Sequential notes 60% + 50% = 110% > 100%
+```
+
+## VELOCITY RANGES
+
+### MIDI VELOCITY STANDARD
+
+**Range:** 1-127 (MIDI standard)
+**Note Off:** 0 (reserved for note-off events)
+**Default:** 100 (when no velocity specified in X symbol)
+
+### DYNAMIC LEVEL MAPPINGS
+
+| Dynamic | MIDI Range | Typical Value | Musical Meaning |
+|---------|------------|---------------|-----------------|
+| **ppp** | 10-20      | 15           | Pianississimo (very very soft) |
+| **pp**  | 21-35      | 28           | Pianissimo (very soft) |
+| **p**   | 36-50      | 43           | Piano (soft) |
+| **mp**  | 51-65      | 58           | Mezzo-piano (moderately soft) |
+| **mf**  | 66-80      | 73           | Mezzo-forte (moderately loud) |
+| **f**   | 81-95      | 88           | Forte (loud) |
+| **ff**  | 96-110     | 103          | Fortissimo (very loud) |
+| **fff** | 111-127    | 119          | Fortississimo (very very loud) |
+
+### VELOCITY USAGE IN SYMBOLS
+
+#### Basic Note with Velocity
+```
+X           # Default velocity 100 (forte range)
+X1          # Minimum velocity (barely audible)
+X60         # Mezzo-piano range
+X80         # Mezzo-forte range  
+X127        # Maximum velocity (fortississimo)
+```
+
+#### Combined with Modifiers
+```
+X80XR25     # Velocity 80, right offset 25%
+X60XL15     # Velocity 60, left offset 15%
+X100XE50    # Velocity 100, duration 50%
+```
+
+### VALIDATION RULES
+
+#### Velocity Range Checking
+- **Minimum:** 1 (values < 1 are invalid)
+- **Maximum:** 127 (values > 127 are invalid)
+- **Reserved:** 0 (used only for note-off, not in input symbols)
+
+#### Error Handling
+```
+X0          ❌ "Velocity 0 must be between 1-127"
+X128        ❌ "Velocity 128 must be between 1-127"  
+X-10        ❌ "Velocity -10 must be between 1-127"
+```
+
+## OUTPUT FORMAT RULES
+
+### STRICT FORMATTING REQUIREMENTS
+
+#### WHAT TO INCLUDE
+- **Tempo declaration:** `Tempo: [NUMBER]` (required)
+- **Time signature:** `TimeSig: [NUM]/[DEN]` (required)  
+- **Key signature:** `Key: [KEY]` (optional, default: C)
+- **Legato setting:** `Legato: [on|off]` (optional, default: off)
+- **Bar declarations:** `Bar: [NUMBER]`
+- **Note data lines:** `[NOTE]: [SUBDIVISIONS]`
+
+#### WHAT TO EXCLUDE
+- **NO explanations** or descriptive text
+- **NO markdown headers** (`===`, `---`, `#`)
+- **NO comments** or analysis sections
+- **NO "Notes:" sections** or annotations
+- **NO extra whitespace** or blank lines for "readability"
+- **NO example sections** in output
+
+### SUBDIVISION COUNT REQUIREMENTS
+
+#### Must Match Time Signature Exactly
+- **4/4:** Exactly 16 subdivisions per note line
+- **3/4:** Exactly 12 subdivisions per note line  
+- **2/4:** Exactly 8 subdivisions per note line
+- **6/8:** Exactly 12 subdivisions per note line
+- **12/8:** Exactly 12 subdivisions per note line
+
+#### Validation Rule
+Each note line must contain the exact number of tokens required by the time signature - no more, no less.
+
+### SPACING REQUIREMENTS
+
+#### Beat Grouping (4/4 and 3/4 Only)
+- **4/4:** 4 beat groups of 4 subdivisions each
+- **3/4:** 3 beat groups of 4 subdivisions each  
+- **Between groups:** 3+ spaces (exactly 3 spaces recommended)
+- **Within groups:** Single space between tokens
+
+#### Single Spacing (All Other Time Signatures)
+- **2/4, 6/8, 12/8:** Single space between all tokens
+- **No beat grouping** required
+
+### CORRECT SPACING EXAMPLES
+```
+4/4: X . . .   X50 . . .   . . X80 .   . . . X
+3/4: X . . .   X50 . . .   . . X80 .
+2/4: X . X50 . . X80 . .
+6/8: X . . X50 . . . X80 . . . .
+```
+
+### INCORRECT SPACING EXAMPLES
+```
+X.....X50.....X80.....X          # No internal spaces ❌
+X . . . X50 . . . . . X80 . . . . X  # Missing beat separation ❌
+X . .   X50 . . .   . . X80 . . . . X   # Wrong group sizes ❌
+```
+
+## VALIDATION REQUIREMENTS
+
+1. **Subdivision Count:** Exact match to time signature requirements
+2. **Time Coverage:** No overlaps within subdivisions, sum ≤ 100%
+3. **Velocity Range:** 1-127 for notes
+4. **Percentage Range:** 0-100 for all timing values
+5. **Bar Sequence:** Positive integers (gaps allowed)
+6. **Note Names:** Valid pitch notation with octave -1 to 9
+
+### ERROR CONDITIONS
+
+#### Count Mismatches
+```
+4/4 time with 15 subdivisions: ❌ "Expected 16, got 15"
+3/4 time with 13 subdivisions: ❌ "Expected 12, got 13"
+```
+
+#### Spacing Violations  
+```
+4/4 without beat groups: ❌ "Expected 4 beat groups separated by 3+ spaces"
+3/4 with wrong grouping: ❌ "Each beat group should have 4 subdivisions"
+```
+
+## COMPLETE EXAMPLE
+
+```
+Tempo: 120
+TimeSig: 4/4
+Key: C
+Legato: off
+
+Bar: 1
+C4: X . . .   X50 . . .   . . X80 .   . . . X
+D4: . XE50 . .   . . XE30 XE20 .   XO25XE50 . . .   ~ . . .
+
+Bar: 2  
+C4: ~ ~50 . .   X100XR25 . . .   XO40XE30 . . .   . . . .
+```
+
+## VALIDATION CHECKLIST
+
+### Before Output:
+- [ ] All required metadata present
+- [ ] Bar numbers are positive integers
+- [ ] Note names follow format `[A-G][#b]?-?[0-9]`
+- [ ] Each note line has exact subdivision count
+- [ ] Spacing pattern matches time signature
+- [ ] No extra explanatory text
+- [ ] No markdown formatting
+
+### Per Note Line:
+- [ ] Colon placement: `NOTE: SUBDIVISIONS`
+- [ ] Proper token spacing within subdivisions
+- [ ] Correct beat grouping (if required)
+- [ ] Valid symbols only (X, XE, XO, XR, XL, ~, .)
+
+### Per Token:
+- [ ] Valid symbol syntax
+- [ ] Velocity range 1-127
+- [ ] Percentage values 0-100
+- [ ] No invalid modifier combinations
+- [ ] Proper sustain separation
+
+### Per Subdivision:
+- [ ] ≤ 1 full note maximum
+- [ ] Short note sum ≤ 100%
+- [ ] No time overlaps
+- [ ] Positioned notes within bounds
+- [ ] Sustain tokens properly spaced
