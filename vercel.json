@@ -1,7 +1,8 @@
 {
-  "buildCommand": "cp package.json frontend/ && cd frontend && npm install && npm run build",
+  "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "npm install --prefix frontend",
+  "installCommand": "cd frontend && npm install",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./frontend",
   "routes": [
     {
       "src": "/(.*)",
