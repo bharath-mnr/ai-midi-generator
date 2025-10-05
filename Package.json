@@ -3,8 +3,15 @@
   "version": "1.0.0",
   "description": "A full-stack AI midi generator.",
   "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
     "dev": "concurrently \"npm run start --prefix frontend\" \"npm run start --prefix backend\"",
     "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
   }
 }
