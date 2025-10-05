@@ -1,6 +1,6 @@
 // frontend/src/components/ChatBot.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Upload, Download, Edit3, Copy, Eye, X, CheckCircle, AlertCircle, Loader2, FileMusic, Trash2, Plus, Library, Info } from 'lucide-react';
+import { Send, Upload, Download, Edit3, Copy, Eye, X, CheckCircle, AlertCircle, Loader2, FileMusic, Trash2, Plus, Library, Info, Menu } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const USER_ID = 'default';
@@ -36,6 +36,7 @@ const ChatBot = () => {
   const [showLibrary, setShowLibrary] = useState(false);
   const [uploadingReference, setUploadingReference] = useState(false);
   const [showReferenceInfo, setShowReferenceInfo] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -249,6 +250,7 @@ const ChatBot = () => {
       setUploadedMidi(null);
       setLastGeneration(null);
       setSelectedMidiForView(null);
+      setMobileMenuOpen(false);
     }
   };
 
@@ -486,7 +488,7 @@ const ChatBot = () => {
     return (
       <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md border border-gray-200">
         <Icon className={`w-3.5 h-3.5 ${status === 'unknown' ? 'animate-spin' : ''}`} style={{ color: config.color }} />
-        <span className="text-xs font-medium" style={{ color: config.color }}>{config.label}</span>
+        <span className="text-xs font-medium hidden xs:inline" style={{ color: config.color }}>{config.label}</span>
       </div>
     );
   };
@@ -503,15 +505,15 @@ const ChatBot = () => {
     if (message.type === 'user') {
       return (
         <div className="flex justify-end mb-6">
-          <div className="max-w-[80%]">
-            <div className="flex items-center justify-end space-x-2 mb-2">
+          <div className="max-w-[90%] xs:max-w-[80%]">
+            <div className="flex items-center justify-end space-x-2 mb-2 flex-wrap">
               {message.requestedBars && (
                 <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                   {message.requestedBars} bars
                 </span>
               )}
               {message.usingReferences && (
-                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full flex items-center">
+                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full flex items-center mt-1 xs:mt-0">
                   <Library className="w-3 h-3 mr-1" />
                   Using references
                 </span>
@@ -527,8 +529,8 @@ const ChatBot = () => {
 
     if (message.type === 'error') {
       return (
-        <div className="flex justify-center mb-4">
-          <div className="max-w-[85%] bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+        <div className="flex justify-center mb-4 px-2">
+          <div className="w-full max-w-[95%] xs:max-w-[85%] bg-red-50 border border-red-200 rounded-lg px-4 py-3">
             <div className="flex items-start space-x-3">
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
@@ -543,8 +545,8 @@ const ChatBot = () => {
 
     if (message.type === 'warning') {
       return (
-        <div className="flex justify-center mb-4">
-          <div className="max-w-[85%] bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+        <div className="flex justify-center mb-4 px-2">
+          <div className="w-full max-w-[95%] xs:max-w-[85%] bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
             <div className="text-sm text-amber-900">{message.content}</div>
           </div>
         </div>
@@ -553,20 +555,20 @@ const ChatBot = () => {
 
     if (message.type === 'system') {
       return (
-        <div className="flex justify-center mb-4">
-          <div className="bg-gray-100 border border-gray-200 rounded-full px-4 py-2">
-            <div className="text-xs text-gray-600 font-medium">{message.content}</div>
+        <div className="flex justify-center mb-4 px-2">
+          <div className="bg-gray-100 border border-gray-200 rounded-full px-4 py-2 max-w-[95%]">
+            <div className="text-xs text-gray-600 font-medium text-center">{message.content}</div>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="flex justify-start mb-6">
-        <div className="max-w-[80%] w-full">
+      <div className="flex justify-start mb-6 px-2">
+        <div className="max-w-[90%] xs:max-w-[80%] w-full">
           <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2">
                 <div className="text-sm font-semibold text-gray-900">
                   {message.editMode ? 'Edited Composition' : 'Generated Composition'}
                 </div>
@@ -585,17 +587,17 @@ const ChatBot = () => {
             <div className="p-4">
               {message.midiUrl ? (
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center space-x-3">
-                      <FileMusic className="w-5 h-5 text-gray-700" />
-                      <div>
-                        <div className="text-sm font-semibold text-gray-900">MIDI File Ready</div>
+                      <FileMusic className="w-5 h-5 text-gray-700 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-gray-900 truncate">MIDI File Ready</div>
                         <div className="text-xs text-gray-600">{message.barCount} bars</div>
                       </div>
                     </div>
                     <button
                       onClick={() => downloadMidi(message.midiUrl)}
-                      className="flex items-center space-x-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-sm font-semibold text-white transition-colors"
+                      className="flex items-center justify-center space-x-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-sm font-semibold text-white transition-colors w-full sm:w-auto"
                     >
                       <Download className="w-4 h-4" />
                       <span>Download</span>
@@ -605,7 +607,7 @@ const ChatBot = () => {
               ) : (
                 <div className="bg-amber-50 rounded-lg p-3 border border-amber-200 mb-4">
                   <div className="flex items-center space-x-2 text-amber-800 text-sm">
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
                     <span>Processing MIDI file...</span>
                   </div>
                 </div>
@@ -614,7 +616,7 @@ const ChatBot = () => {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setSelectedMidiForView(message)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                  className="flex items-center justify-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors flex-1 sm:flex-none min-w-[120px]"
                 >
                   <Eye className="w-4 h-4" />
                   <span>View Notation</span>
@@ -622,7 +624,7 @@ const ChatBot = () => {
 
                 <button
                   onClick={() => handleCopy(message.content)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                  className="flex items-center justify-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors flex-1 sm:flex-none min-w-[120px]"
                 >
                   <Copy className="w-4 h-4" />
                   <span>{copied ? 'Copied!' : 'Copy Text'}</span>
@@ -645,35 +647,35 @@ const ChatBot = () => {
     if (!message) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">MIDI Notation</h2>
-              <p className="text-sm text-gray-600 mt-1">Professional text-based MIDI format</p>
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4">
+        <div className="bg-white rounded-xl w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl m-2">
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">MIDI Notation</h2>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">Professional text-based MIDI format</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 ml-2">
               <X className="w-5 h-5 text-gray-600" />
             </button>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-6">
-            <pre className="text-sm font-mono bg-gray-900 text-gray-100 p-6 rounded-lg whitespace-pre-wrap leading-relaxed border border-gray-700">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <pre className="text-xs sm:text-sm font-mono bg-gray-900 text-gray-100 p-4 sm:p-6 rounded-lg whitespace-pre-wrap leading-relaxed border border-gray-700 overflow-x-auto">
               {message.content}
             </pre>
           </div>
 
-          <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3">
+          <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
             <button
               onClick={() => copyToClipboard(message.content)}
-              className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+              className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors w-full sm:w-auto"
             >
               Copy All
             </button>
             {message.midiUrl && (
               <button
                 onClick={() => downloadMidi(message.midiUrl)}
-                className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors w-full sm:w-auto"
               >
                 Download MIDI File
               </button>
@@ -688,38 +690,38 @@ const ChatBot = () => {
     if (!showLibrary) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <Library className="w-6 h-6 text-gray-700" />
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Reference Library</h2>
-                <p className="text-sm text-gray-600">MIDI files used for style learning</p>
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4">
+        <div className="bg-white rounded-xl w-full max-w-2xl max-h-[95vh] sm:max-h-[80vh] flex flex-col shadow-2xl m-2">
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+            <div className="flex items-center space-x-3 min-w-0">
+              <Library className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 flex-shrink-0" />
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 truncate">Reference Library</h2>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">MIDI files used for style learning</p>
               </div>
             </div>
-            <button onClick={() => setShowLibrary(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button onClick={() => setShowLibrary(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 ml-2">
               <X className="w-5 h-5 text-gray-600" />
             </button>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             {referenceLibrary.length === 0 ? (
-              <div className="text-center py-12">
-                <Library className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <div className="text-center py-8 sm:py-12">
+                <Library className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
                 <p className="text-gray-600 mb-2 font-medium">No reference files</p>
-                <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto">
                   Upload MIDI files to teach the AI your preferred musical style and patterns
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
                 {referenceLibrary.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center space-x-4">
-                      <FileMusic className="w-5 h-5 text-gray-600 flex-shrink-0" />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{file.displayName}</div>
+                  <div key={index} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                      <FileMusic className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-gray-900 truncate">{file.displayName}</div>
                         <div className="text-xs text-gray-500">
                           {file.barCount} bars • Uploaded {new Date(file.uploadedAt).toLocaleDateString()}
                         </div>
@@ -731,18 +733,18 @@ const ChatBot = () => {
             )}
           </div>
 
-          <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-between">
+          <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-3">
             <button
               onClick={clearReferenceLibrary}
               disabled={referenceLibrary.length === 0}
-              className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto order-2 sm:order-1"
             >
               Clear All
             </button>
             <button
               onClick={() => referenceInputRef.current?.click()}
               disabled={referenceLibrary.length >= 5}
-              className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto order-1 sm:order-2"
             >
               Add Reference
             </button>
@@ -756,31 +758,31 @@ const ChatBot = () => {
     if (!showReferenceInfo) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4">
+        <div className="bg-white rounded-xl w-full max-w-2xl max-h-[95vh] overflow-y-auto shadow-2xl m-2">
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 sticky top-0 bg-white">
             <div className="flex items-center space-x-3">
-              <Info className="w-6 h-6 text-gray-700" />
-              <h2 className="text-lg font-semibold text-gray-900">About Reference Learning</h2>
+              <Info className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 flex-shrink-0" />
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">About Reference Learning</h2>
             </div>
-            <button onClick={() => setShowReferenceInfo(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button onClick={() => setShowReferenceInfo(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 ml-2">
               <X className="w-5 h-5 text-gray-600" />
             </button>
           </div>
           
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             <div>
-              <h3 className="text-md font-semibold text-gray-900 mb-3">How Reference Learning Works</h3>
-              <p className="text-sm text-gray-700 leading-relaxed">
+              <h3 className="text-sm sm:text-md font-semibold text-gray-900 mb-2 sm:mb-3">How Reference Learning Works</h3>
+              <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
                 Reference files are MIDI compositions that the AI analyzes to understand your preferred musical style. 
                 The system learns patterns, harmonies, rhythms, and structural elements from your references to create 
                 compositions that match your aesthetic preferences.
               </p>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2">Best Practices</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+              <h4 className="text-xs sm:text-sm font-semibold text-blue-900 mb-2">Best Practices</h4>
+              <ul className="text-xs sm:text-sm text-blue-800 space-y-1">
                 <li>• Upload 2-3 high-quality MIDI files in your preferred style</li>
                 <li>• Choose files with clear musical structure and instrumentation</li>
                 <li>• References work best when they share similar characteristics</li>
@@ -789,7 +791,7 @@ const ChatBot = () => {
             </div>
 
             <div>
-              <h4 className="text-sm font-semibold text-gray-900 mb-2">Technical Details</h4>
+              <h4 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2">Technical Details</h4>
               <p className="text-xs text-gray-600">
                 The system analyzes reference files for: tempo patterns, dynamic ranges, voice leading, 
                 harmonic progressions, rhythmic density, and structural organization. This analysis happens 
@@ -802,18 +804,110 @@ const ChatBot = () => {
     );
   };
 
+  const MobileMenu = () => {
+    if (!mobileMenuOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/60 z-40 lg:hidden">
+        <div className="absolute top-0 right-0 w-64 h-full bg-white shadow-xl">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">Menu</h3>
+              <button onClick={() => setMobileMenuOpen(false)} className="p-1">
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-4 space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-600 font-medium">Mode:</label>
+                <select 
+                  value={performanceMode}
+                  onChange={(e) => setPerformanceMode(e.target.value)}
+                  className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:border-gray-500 focus:ring-1 focus:ring-gray-300 bg-white flex-1"
+                >
+                  <option value="fast">Fast</option>
+                  <option value="balanced">Balanced</option>
+                  <option value="quality">Quality</option>
+                </select>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-600 font-medium">Style:</label>
+                <select 
+                  value={creativityLevel}
+                  onChange={(e) => setCreativityLevel(e.target.value)}
+                  className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:border-gray-500 focus:ring-1 focus:ring-gray-300 bg-white flex-1"
+                >
+                  <option value="low">Precise</option>
+                  <option value="medium">Balanced</option>
+                  <option value="high">Creative</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-gray-200 space-y-2">
+              <button
+                onClick={() => {
+                  setShowLibrary(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center space-x-3 w-full px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+              >
+                <Library className="w-4 h-4" />
+                <span>Reference Library</span>
+                {referenceLibrary.length > 0 && (
+                  <span className="bg-gray-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ml-auto">
+                    {referenceLibrary.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowReferenceInfo(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center space-x-3 w-full px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+              >
+                <Info className="w-4 h-4 text-gray-600" />
+                <span>About References</span>
+              </button>
+
+              <button
+                onClick={handleNewChat}
+                className="flex items-center space-x-3 w-full px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>New Chat</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white">
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-4 border-b border-gray-200 bg-white">
-        <div className="flex items-center space-x-4">
-          <div className="text-2xl font-bold text-gray-900">MIDI Composer</div>
+      <header className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-gray-200 bg-white">
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          <button 
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Menu className="w-5 h-5 text-gray-600" />
+          </button>
+          <div className="text-xl sm:text-2xl font-bold text-gray-900">MIDI Composer</div>
           <div className="hidden sm:block text-sm text-gray-500">AI-Powered Music Generation</div>
         </div>
         
-        <div className="flex items-center space-x-4">
-          {/* Controls */}
-          <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Desktop Controls - Hidden on mobile */}
+          <div className="hidden lg:flex items-center space-x-3">
             <div className="flex items-center space-x-2">
               <label className="text-xs text-gray-600 font-medium">Mode:</label>
               <select 
@@ -844,10 +938,10 @@ const ChatBot = () => {
           {/* Reference Library Button */}
           <button
             onClick={() => setShowLibrary(true)}
-            className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors relative"
+            className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors relative"
           >
             <Library className="w-4 h-4" />
-            <span>References</span>
+            <span className="hidden xs:inline">References</span>
             {referenceLibrary.length > 0 && (
               <span className="absolute -top-1 -right-1 bg-gray-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
                 {referenceLibrary.length}
@@ -858,7 +952,7 @@ const ChatBot = () => {
           {/* Info Button */}
           <button
             onClick={() => setShowReferenceInfo(true)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors"
             title="About reference learning"
           >
             <Info className="w-4 h-4 text-gray-600" />
@@ -870,28 +964,31 @@ const ChatBot = () => {
           {/* New Chat */}
           <button
             onClick={handleNewChat}
-            className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+            className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>New</span>
+            <span className="hidden xs:inline">New</span>
           </button>
         </div>
       </header>
 
+      {/* Mobile Menu */}
+      <MobileMenu />
+
       {/* Main Chat Area */}
       <main className="flex-1 overflow-y-auto bg-gray-50">
-        <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center mt-32">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">Create Professional Music</h2>
-                <p className="text-gray-600 max-w-2xl text-lg mb-6">
+            <div className="flex flex-col items-center justify-center mt-16 sm:mt-24 lg:mt-32 px-4">
+              <div className="text-center mb-8 sm:mb-12">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">Create Professional Music</h2>
+                <p className="text-gray-600 max-w-2xl text-base sm:text-lg mb-4 sm:mb-6">
                   Describe your musical ideas and let AI generate professional MIDI compositions. 
                   Upload reference files to guide the style and structure.
                 </p>
                 {referenceLibrary.length > 0 && (
-                  <div className="inline-flex items-center space-x-2 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
-                    <Library className="w-5 h-5" />
+                  <div className="inline-flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
+                    <Library className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>Using {referenceLibrary.length} reference file(s) for style guidance</span>
                   </div>
                 )}
@@ -904,13 +1001,13 @@ const ChatBot = () => {
           ))}
           
           {isLoading && (
-            <div className="flex justify-start mb-6">
-              <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-6 py-4 shadow-sm">
-                <div className="flex items-center space-x-4">
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-600" />
-                  <div>
+            <div className="flex justify-start mb-6 px-2">
+              <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 sm:px-6 py-3 sm:py-4 shadow-sm max-w-[90%] xs:max-w-[80%]">
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-gray-600 flex-shrink-0" />
+                  <div className="min-w-0">
                     <div className="text-sm font-medium text-gray-900">Composing Music</div>
-                    <div className="text-xs text-gray-500 mt-1">{thinkingMessage}</div>
+                    <div className="text-xs text-gray-500 mt-1 truncate">{thinkingMessage}</div>
                   </div>
                 </div>
               </div>
@@ -923,16 +1020,16 @@ const ChatBot = () => {
       {/* Input Area */}
       <footer className="border-t border-gray-200 bg-white">
         {uploadedMidi && (
-          <div className="max-w-4xl mx-auto px-6 pt-4">
-            <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-3">
-              <div className="flex items-center space-x-3 text-sm">
-                <FileMusic className="w-4 h-4 text-gray-600" />
-                <span className="font-medium text-gray-900">{uploadedMidi.fileName}</span>
-                <span className="text-gray-500 text-xs">({uploadedMidi.stats?.bars || 0} bars)</span>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4">
+            <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3 mb-2 sm:mb-3">
+              <div className="flex items-center space-x-2 sm:space-x-3 text-sm min-w-0">
+                <FileMusic className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                <span className="font-medium text-gray-900 truncate">{uploadedMidi.fileName}</span>
+                <span className="text-gray-500 text-xs flex-shrink-0">({uploadedMidi.stats?.bars || 0} bars)</span>
               </div>
               <button
                 onClick={removeUploadedMidi}
-                className="p-1 hover:bg-gray-200 rounded transition-colors"
+                className="p-1 hover:bg-gray-200 rounded transition-colors flex-shrink-0 ml-2"
               >
                 <Trash2 className="w-4 h-4 text-gray-600" />
               </button>
@@ -941,16 +1038,16 @@ const ChatBot = () => {
         )}
 
         {uploadingReference && (
-          <div className="max-w-4xl mx-auto px-6 pt-4">
-            <div className="flex items-center space-x-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-3 text-sm text-blue-800">
-              <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4">
+            <div className="flex items-center space-x-3 bg-blue-50 border border-blue-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3 mb-2 sm:mb-3 text-sm text-blue-800">
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
               <span>Adding to reference library...</span>
             </div>
           </div>
         )}
 
-        <div className="max-w-4xl mx-auto p-6">
-          <div className="flex items-end space-x-4">
+        <div className="max-w-4xl mx-auto p-4 sm:p-6">
+          <div className="flex items-end space-x-2 sm:space-x-3 lg:space-x-4">
             {/* Upload Button */}
             <input
               ref={fileInputRef}
@@ -970,15 +1067,15 @@ const ChatBot = () => {
             
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-center w-12 h-12 rounded-xl bg-white border border-gray-300 hover:bg-gray-50 transition-colors flex-shrink-0"
+              className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white border border-gray-300 hover:bg-gray-50 transition-colors flex-shrink-0"
               disabled={isLoading}
               title="Upload MIDI for editing"
             >
-              <Upload className="w-5 h-5 text-gray-600" />
+              <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </button>
             
             {/* Text Input */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <textarea
                 ref={textareaRef}
                 value={inputMessage}
@@ -990,35 +1087,46 @@ const ChatBot = () => {
                   }
                 }}
                 placeholder="Describe your musical idea... (e.g., 'Compose a 16-bar piano piece in C major with emotional melody')"
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:border-gray-500 focus:ring-2 focus:ring-gray-200 focus:outline-none text-sm resize-none transition-all placeholder-gray-400"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-white border border-gray-300 rounded-lg sm:rounded-xl focus:border-gray-500 focus:ring-2 focus:ring-gray-200 focus:outline-none text-sm resize-none transition-all placeholder-gray-400"
                 disabled={isLoading}
                 rows={1}
-                style={{ minHeight: '48px', maxHeight: '120px' }}
+                style={{ minHeight: '40px', maxHeight: '120px' }}
               />
             </div>
             
             {/* Action Buttons */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <button 
                 onClick={sendEditRequest}
                 disabled={isLoading || !inputMessage.trim() || (!lastGeneration && !uploadedMidi)}
-                className="w-12 h-12 rounded-xl bg-white border border-gray-300 hover:bg-gray-50 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white border border-gray-300 hover:bg-gray-50 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
                 title="Edit last generation"
               >
-                <Edit3 className="w-5 h-5" />
+                <Edit3 className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
               
               <button 
                 onClick={() => sendMessage()}
                 disabled={isLoading || !inputMessage.trim()}
-                className="w-12 h-12 rounded-xl bg-gray-900 hover:bg-gray-800 text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gray-900 hover:bg-gray-800 text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
                 title="Generate composition"
               >
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>
           
+          <div className="text-xs text-gray-500 mt-2 sm:mt-3 text-center">
+            Don't have a DAW? Use online MIDI players like{' '}
+            <a href="https://pianotify.com" target="_blank" rel="noopener noreferrer" className="px-1 sm:px-2 py-1 bg-gray-100 rounded text-gray-700 font-mono text-xs border border-gray-300">
+              Pianotify
+            </a>{' '}
+            or{' '}
+            <a href="https://onlinesequencer.net" target="_blank" rel="noopener noreferrer" className="px-1 sm:px-2 py-1 bg-gray-100 rounded text-gray-700 font-mono text-xs border border-gray-300">
+              Online Sequencer
+            </a>{' '}
+            to play MIDI files.
+          </div>
         </div>
       </footer>
 
