@@ -24,28 +24,33 @@
 ![Enhanced MIDI](images/after-midi.png)
 *Full orchestral arrangement with 5-part harmony*
 
-**Prompt Used:**
-Keep the main melody fully intact and positioned in the high register.
+Prompt Used:
+Keep the main melody fully intact and positioned in the high register. 
 Do not alter or revoice the melody in any way — it remains exactly as written.
-Add rich orchestral harmony layers beneath the melody, forming at least
+
+Add rich orchestral harmony layers beneath the melody, forming at least 
 5-part harmony for a full ensemble texture.
-Maintain smooth voice leading and overall orchestral balance, ensuring
+
+Maintain smooth voice leading and overall orchestral balance, ensuring 
 a deep, lush harmonic texture throughout.
+
 Keep the total structure exactly 33 bars.
+
 Use cinematic or symphonic voicing principles:
+- High range (D4–A6): Melody remains clear and dominant.
+- Upper-mid range (G3–G5): Light harmonic or supportive lines.
+- Middle range (C3–C5): Core harmonic foundation and color tones.
+- Lower range (C2–C4): Deep harmonic reinforcement and root tones.
+- Sub-low range (E1–C3): Optional octave or bass grounding.
 
-High range (D4–A6): Melody remains clear and dominant.
-Upper-mid range (G3–G5): Light harmonic or supportive lines.
-Middle range (C3–C5): Core harmonic foundation and color tones.
-Lower range (C2–C4): Deep harmonic reinforcement and root tones.
-Sub-low range (E1–C3): Optional octave or bass grounding.
-
-Keep the harmony openly spaced in lower registers and closer in upper
+Keep the harmony openly spaced in lower registers and closer in upper 
 registers for natural cinematic warmth.
-Preserve the melody as the clear focal point, while the underlying
-harmony moves slowly, legato, and dynamically supportive, never
+
+Preserve the melody as the clear focal point, while the underlying 
+harmony moves slowly, legato, and dynamically supportive, never 
 rhythmically intrusive.
-The final sound should be lush, emotive, and fully cinematic, maintaining
+
+The final sound should be lush, emotive, and fully cinematic, maintaining 
 clarity, warmth, and melodic dominance across all 33 bars.
 
 **Result:** The AI successfully added cinematic harmonic layers across 5 voices 
