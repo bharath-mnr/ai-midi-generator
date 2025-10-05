@@ -2,10 +2,11 @@
 
 /**
  * Enhanced prompt builder with musical intelligence
- * Focuses on professional compositions without restrictive pattern detection
+ * Optimized for long compositions (up to 500 bars)
  */
 
-const CORE_RULES = `CRITICAL MIDI FORMAT RULES - YOU MUST FOLLOW EXACTLY:
+function getCoreRules(length) {
+  return `CRITICAL MIDI FORMAT RULES - YOU MUST FOLLOW EXACTLY:
 
 METADATA (REQUIRED):
 Tempo: [VALUE]
@@ -20,23 +21,49 @@ NOTE NAME FORMAT:
 - MUST be: [A-G][#b]?[0-9] (C4, G3, A#4, Bb3)
 - NEVER use voice labels (V1, V2, Voice1, etc.)
 
-TOKEN SPACING (4/4 TIME):
+SUBDIVISION COUNTS (CRITICAL):
+- 4/4 time = 16 subdivisions per line
+- 3/4 time = 12 subdivisions per line
+- 2/4 time = 8 subdivisions per line
+- 6/8 time = 12 subdivisions per line
+- 12/8 time = 12 subdivisions per line
+
+SPACING PATTERNS:
+4/4 TIME (16 subdivisions):
 C4: X . . .   X60 . . .   . . X80 .   . . . X
      |beat1|   |beat2|     |beat3|     |beat4|
 - 4 groups of 4 tokens, 3 spaces between groups
 
+3/4 TIME (12 subdivisions):
+C4: X . . .   X60 . . .   . . X80 .
+     |beat1|   |beat2|     |beat3|
+- 3 groups of 4 tokens, 3 spaces between groups
+
+OTHER TIME SIGNATURES (2/4, 6/8, 12/8):
+- Single space between all tokens
+- No beat grouping required
+
 SYMBOLS:
 - X = note (velocity 100)
-- X[1-127] = velocity-specific note
-- . = rest, ~ = sustain (separate token)
-- XR[n] = right offset, XL[n] = left offset
-- XE[n] = early cutoff, XO[n]XE[m] = positioned note
+- X[1-127] = velocity-specific note (range: 1-127 only)
+- . = rest, ~ = sustain (MUST be separate token with space)
+- XR[n] = right offset (0-100), XL[n] = left offset (0-100)
+- XE[n] = early cutoff (0-100), XO[n]XE[m] = positioned note
+
+STACKING RULES:
+- Maximum 1 full note (X, X[vel], X[vel]XR[n]) per subdivision
+- Multiple short notes (XE) allowed if sum ≤ 100%
+- Sustain MUST have space: "X80 ~" NOT "X80~"
+- No time overlaps allowed
 
 OUTPUT RULES:
 - NO voice labels, NO markdown, NO explanations
-- ONLY valid MIDI notation`;
+- ONLY valid MIDI notation
+- Generate ALL ${length} bars requested
+- Count carefully: Bar: 1 through Bar: ${length}`;
+}
 
-function extractRelevantBars(midiText, maxBars = 50) {
+function extractRelevantBars(midiText, maxBars = 100) {
   if (!midiText) return '';
   
   const lines = midiText.split('\n');
@@ -45,7 +72,9 @@ function extractRelevantBars(midiText, maxBars = 50) {
   let inMetadata = true;
 
   for (const line of lines) {
-    if (line.startsWith('Tempo:') || line.startsWith('TimeSig:') || line.startsWith('Key:') || line.startsWith('Legato:')) {
+    // Always include metadata
+    if (line.startsWith('Tempo:') || line.startsWith('TimeSig:') || 
+        line.startsWith('Key:') || line.startsWith('Legato:')) {
       result.push(line);
       continue;
     }
@@ -111,23 +140,85 @@ PIANO TEXTURE GUIDANCE:
   return complexityGuidance;
 }
 
+function getLongCompositionGuidance(length) {
+  /**
+   * Provides specific structural guidance based on composition length
+   */
+  if (length <= 32) {
+    return `
+SHORT COMPOSITION (${length} bars):
+- Create a complete musical idea with introduction, development, and conclusion
+- Use 2-3 distinct musical phrases
+- Maintain consistent energy and mood`;
+  } 
+  
+  if (length <= 64) {
+    return `
+MEDIUM COMPOSITION (${length} bars):
+- Use A-B-A or verse-chorus structure
+- Develop 2-3 main themes with variations
+- Create dynamic contrast between sections (soft/loud, sparse/dense)
+- Build to a clear climax around bar ${Math.floor(length * 0.7)}`;
+  } 
+  
+  if (length <= 128) {
+    return `
+EXTENDED COMPOSITION (${length} bars):
+- Create multi-section form (A-B-C-A or similar)
+- Develop 3-4 distinct themes with variations
+- Use transitions and modulations between sections
+- Build multiple smaller climaxes leading to main climax at bar ${Math.floor(length * 0.75)}
+- Include contrasting moods: contemplative, intense, peaceful
+- Develop ideas gradually across 20-30 bar sections`;
+  }
+  
+  if (length <= 256) {
+    return `
+LONG COMPOSITION (${length} bars):
+- Create multi-movement structure with 4-5 distinct sections
+- Each section should be 30-50 bars with its own character
+- Use key changes and tempo variations (mark clearly)
+- Develop themes across the entire piece with callbacks and transformations
+- Build emotional arc: introduction → development → crisis → resolution
+- Include dramatic moments, quiet interludes, and powerful climaxes
+- Main climax around bar ${Math.floor(length * 0.75)}, then graceful resolution`;
+  }
+  
+  // Over 256 bars - epic composition
+  return `
+EPIC COMPOSITION (${length} bars):
+- Create symphonic multi-movement structure with 5-7 major sections
+- Each movement should span 50-80 bars with distinct character
+- Use multiple key changes, tempo changes, and time signature variations
+- Develop 5-6 major themes that evolve throughout
+- Create clear musical narrative with multiple dramatic arcs
+- Include various moods: heroic, melancholic, triumphant, mysterious, peaceful
+- Build to multiple climaxes, with the greatest at bar ${Math.floor(length * 0.8)}
+- Final section (last 30-50 bars) should provide satisfying resolution
+- Use recurring motifs to create unity across the entire work`;
+}
+
 function buildEnhancedPrompt(userPrompt, length, examples = null, editMode = false, originalContent = null, referenceGuidance = '') {
   // Get musical complexity guidance
   const complexityGuidance = analyzeMusicalComplexity(userPrompt);
+  const lengthGuidance = getLongCompositionGuidance(length);
+  const coreRules = getCoreRules(length);
   
   // EDIT MODE
   if (editMode && originalContent) {
     const totalBars = (originalContent.match(/Bar:/g) || []).length;
-    const contextBars = Math.min(totalBars, 50);
+    const contextBars = Math.min(totalBars, 100); // Increased from 50 to 100
     const context = extractRelevantBars(originalContent, contextBars);
     
-    return `${CORE_RULES}
+    return `${coreRules}
 
 PROFESSIONAL EDITING TASK: "${userPrompt}"
 
 ${complexityGuidance}
 
-ORIGINAL CONTENT (${contextBars} of ${totalBars} bars):
+${lengthGuidance}
+
+ORIGINAL CONTENT (first ${contextBars} of ${totalBars} bars):
 ${context}
 
 ${referenceGuidance ? `REFERENCE STYLE: ${referenceGuidance}` : ''}
@@ -137,47 +228,37 @@ CRITICAL MUSICAL REQUIREMENTS:
 - ADD sophisticated harmonic and melodic elements
 - CREATE emotional depth and development
 - USE professional composition techniques
+- MAINTAIN continuity with original structure
+- GENERATE ALL ${totalBars} bars
 
 EDITED MIDI OUTPUT (${totalBars} bars):`;
   }
 
   // GENERATION MODE - Enhanced for professional results
-  let prompt = `${CORE_RULES}
+  let prompt = `${coreRules}
 
 PROFESSIONAL COMPOSITION REQUEST: "${userPrompt}"
 
-BARS REQUIRED: ${length} bars
+BARS REQUIRED: ${length} bars (YOU MUST GENERATE ALL ${length} BARS)
 
 ${complexityGuidance}
 
-${referenceGuidance ? `REFERENCE STYLE: ${referenceGuidance}` : ''}`;
+${lengthGuidance}
 
-  // Add length-specific guidance
-  if (length > 80) {
-    prompt += `
-EXTENDED COMPOSITION GUIDANCE (${length} bars):
-- Create multi-movement structure with clear sections
-- Develop themes across 30+ bar spans
-- Use key changes and modulations for variety
-- Build to emotional peaks and resolve gracefully
-- Maintain musical coherence across the entire piece`;
-  } else if (length > 40) {
-    prompt += `
-MEDIUM COMPOSITION GUIDANCE (${length} bars):
-- Create verse-chorus-bridge structure
-- Develop 2-3 main musical themes
-- Use dynamic contrast between sections
-- Build intensity to a clear climax`;
-  }
+${referenceGuidance ? `REFERENCE STYLE: ${referenceGuidance}` : ''}`;
 
   // Professional guidance without restrictive pattern detection
   prompt += `
 PROFESSIONAL COMPOSITION TECHNIQUES TO USE:
 - Voice leading and counterpoint
-- Harmonic tension and resolution
+- Harmonic tension and resolution (use ii-V-I, modal interchange, borrowed chords)
 - Thematic development and variation
-- Dynamic shaping and expression
+- Dynamic shaping and expression (pp to ff)
 - Rhythmic complexity and syncopation
+- Melodic contour and phrasing
+- Textural contrast (sparse vs. dense)
+
+CRITICAL: Generate EXACTLY ${length} bars. Count carefully and ensure Bar: ${length} appears.
 
 MIDI OUTPUT (${length} bars of professional-quality music):`;
 
@@ -285,16 +366,20 @@ COMPLEXITY ENHANCEMENT:
 
 function buildMidiEditPrompt(userPrompt, originalContent, length, referenceGuidance = '') {
   const totalBars = (originalContent.match(/Bar:/g) || []).length;
-  const contextBars = Math.min(totalBars, 50);
+  const contextBars = Math.min(totalBars, 100); // Increased from 50 to 100
   const context = extractRelevantBars(originalContent, contextBars);
   const musicalEnhancement = getMusicalEnhancement(userPrompt);
   const complexityGuidance = analyzeMusicalComplexity(userPrompt);
+  const lengthGuidance = getLongCompositionGuidance(totalBars);
+  const coreRules = getCoreRules(totalBars);
 
-  return `${CORE_RULES}
+  return `${coreRules}
 
 PROFESSIONAL MUSICAL EDITING: "${userPrompt}"
 
 ${complexityGuidance}
+
+${lengthGuidance}
 
 ORIGINAL COMPOSITION (first ${contextBars} of ${totalBars} bars):
 ${context}
@@ -311,6 +396,10 @@ PROFESSIONAL EDITING REQUIREMENTS:
 - DEVELOP themes and variations throughout
 - ENSURE every bar contributes to musical narrative
 - USE professional composition techniques
+- MAINTAIN structural coherence across all ${totalBars} bars
+- GENERATE ALL ${totalBars} bars (count carefully!)
+
+CRITICAL: You MUST output all ${totalBars} bars. Start from Bar: 1 and end at Bar: ${totalBars}.
 
 EDITED MIDI OUTPUT (${totalBars} bars of professional music):`;
 }
@@ -321,5 +410,6 @@ module.exports = {
   extractRelevantBars,
   analyzeReferencePatterns,
   getMusicalEnhancement,
-  analyzeMusicalComplexity
+  analyzeMusicalComplexity,
+  getLongCompositionGuidance
 };

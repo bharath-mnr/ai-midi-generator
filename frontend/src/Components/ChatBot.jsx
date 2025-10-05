@@ -1,9 +1,7 @@
-// frontend/src/components/ChatBot.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Upload, Download, Edit3, Copy, Eye, X, CheckCircle, AlertCircle, Loader2, FileMusic, Trash2, Plus, Library, Info, Menu } from 'lucide-react';
+import { Send, Upload, Download, Edit3, Copy, Eye, X, CheckCircle, AlertCircle, Loader2, FileMusic, Plus, Menu } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const USER_ID = 'default';
 
 const THINKING_MESSAGES = [
   "Analyzing musical patterns...",
@@ -15,9 +13,7 @@ const THINKING_MESSAGES = [
   "Weaving musical textures...",
   "Sculpting dynamic contours...",
   "Building emotional arc...",
-  "Refining musical phrases...",
-  "Learning from your references...",
-  "Applying reference style patterns..."
+  "Refining musical phrases..."
 ];
 
 const ChatBot = () => {
@@ -31,42 +27,12 @@ const ChatBot = () => {
   const [uploadedMidi, setUploadedMidi] = useState(null);
   const [selectedMidiForView, setSelectedMidiForView] = useState(null);
   const [lastGeneration, setLastGeneration] = useState(null);
-  
-  const [referenceLibrary, setReferenceLibrary] = useState([]);
-  const [showLibrary, setShowLibrary] = useState(false);
-  const [uploadingReference, setUploadingReference] = useState(false);
-  const [showReferenceInfo, setShowReferenceInfo] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
-  const referenceInputRef = useRef(null);
   const textareaRef = useRef(null);
   const thinkingIntervalRef = useRef(null);
-
-  // Color palette
-  const colors = {
-    primary: {
-      50: '#f8fafc',
-      100: '#f1f5f9',
-      200: '#e2e8f0',
-      300: '#cbd5e1',
-      400: '#94a3b8',
-      500: '#64748b',
-      600: '#475569',
-      700: '#334155',
-      800: '#1e293b',
-      900: '#0f172a'
-    },
-    accent: {
-      500: '#3b82f6',
-      600: '#2563eb',
-      700: '#1d4ed8'
-    },
-    success: '#10b981',
-    warning: '#f59e0b',
-    error: '#ef4444'
-  };
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -78,7 +44,6 @@ const ChatBot = () => {
 
   useEffect(() => {
     checkSystemHealth();
-    loadReferenceLibrary();
   }, []);
 
   useEffect(() => {
@@ -121,130 +86,59 @@ const ChatBot = () => {
     }
   };
 
-  const loadReferenceLibrary = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/files/${USER_ID}`);
-      const data = await response.json();
-      if (data.success) {
-        setReferenceLibrary(data.files);
+const extractBarCount = (text) => {
+    if (!text) return null;
+
+    let maxBars = 0;
+
+    // Priority 1: "Total: Bars X - Y" format (HIGHEST PRIORITY)
+    const totalBarsRangePattern = /total:?\s*bars?\s+(\d+)\s*[-–—]\s*(\d+)/i;
+    const totalBarsMatch = text.match(totalBarsRangePattern);
+    if (totalBarsMatch && totalBarsMatch[2]) {
+      const count = parseInt(totalBarsMatch[2]);
+      if (count > 0 && count <= 500) {
+        console.log(`✅ Frontend: "Total: Bars 1-${count}"`);
+        return count;
       }
-    } catch (error) {
-      console.error('Failed to load reference library:', error);
-    }
-  };
-
-  const handleReferenceUpload = async (file) => {
-    if (!file || !(file.type === 'audio/midi' || file.name.endsWith('.mid'))) {
-      addErrorMessage('Please upload a valid MIDI file (.mid)');
-      return;
     }
 
-    setUploadingReference(true);
-
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const base64Data = e.target.result.split(',')[1];
-          
-          const response = await fetch(`${API_BASE_URL}/upload-reference`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              midiData: base64Data,
-              userId: USER_ID
-            })
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Upload failed');
-          }
-
-          const data = await response.json();
-
-          const uploadMessage = {
-            id: Date.now(),
-            type: 'system',
-            content: `Added to reference library: ${file.name} (${data.barCount} bars)`,
-            timestamp: new Date().toISOString()
-          };
-
-          setMessages(prev => [...prev, uploadMessage]);
-          loadReferenceLibrary();
-          
-        } catch (error) {
-          console.error('Reference upload failed:', error);
-          addErrorMessage(`Reference upload failed: ${error.message}`);
-        } finally {
-          setUploadingReference(false);
-        }
-      };
-
-      reader.readAsDataURL(file);
-
-    } catch (error) {
-      console.error('Reference upload failed:', error);
-      setUploadingReference(false);
-      addErrorMessage('Reference upload failed. Please try again.');
-    }
-  };
-
-  const clearReferenceLibrary = async () => {
-    if (!window.confirm('Clear all reference files? This cannot be undone.')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/files/${USER_ID}/clear`, {
-        method: 'POST'
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setReferenceLibrary([]);
-        const clearMessage = {
-          id: Date.now(),
-          type: 'system',
-          content: data.message,
-          timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, clearMessage]);
+    // Priority 2: Find ALL "Bars X - Y" and take LARGEST
+    const allRangePattern = /bars?\s+(\d+)\s*[-–—]\s*(\d+)/gi;
+    let match;
+    while ((match = allRangePattern.exec(text)) !== null) {
+      const endBar = parseInt(match[2]);
+      if (endBar > maxBars && endBar <= 500) {
+        maxBars = endBar;
       }
-    } catch (error) {
-      console.error('Failed to clear library:', error);
-      addErrorMessage('Failed to clear reference library');
     }
-  };
 
-  const extractBarCount = (text) => {
+    if (maxBars > 0) {
+      console.log(`✅ Frontend: Maximum bar range found: ${maxBars}`);
+      return maxBars;
+    }
+
+    // Priority 3: Simple formats
     const patterns = [
-      /bars?\s+(\d+)[-–](\d+)/i,
-      /(\d+)\s+bars?/i,
+      /bars?\s*[=:]\s*(\d+)/i,
+      /(\d+)\s*bars?\s*$/i,
+      /total:?\s*(\d+)\s*bars?/i,
     ];
     
     for (const pattern of patterns) {
-      const match = text.match(pattern);
-      if (match) {
-        if (match[2]) {
-          const end = parseInt(match[2]);
-          if (end > 0 && end <= 200) return end;
+      const simpleMatch = text.match(pattern);
+      if (simpleMatch && simpleMatch[1]) {
+        const count = parseInt(simpleMatch[1]);
+        if (count > 0 && count <= 500) {
+          return count;
         }
-        const count = parseInt(match[1]);
-        if (count > 0 && count <= 200) return count;
       }
     }
+
     return null;
   };
 
-  const handleNewChat = async () => {
-    if (window.confirm('Start a new conversation? This will clear all messages and delete generated files.')) {
-      try {
-        await fetch(`${API_BASE_URL}/clear-files`, { method: 'POST' });
-      } catch (error) {
-        console.error('Failed to clear files:', error);
-      }
-      
+  const handleNewChat = () => {
+    if (window.confirm('Start a new conversation? This will clear all messages.')) {
       setMessages([]);
       setInputMessage('');
       setUploadedMidi(null);
@@ -322,14 +216,6 @@ const ChatBot = () => {
     e.target.value = '';
   };
 
-  const handleReferenceFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      handleReferenceUpload(file);
-    }
-    e.target.value = '';
-  };
-
   const removeUploadedMidi = () => {
     setUploadedMidi(null);
     const removeMessage = {
@@ -353,8 +239,7 @@ const ChatBot = () => {
       timestamp: new Date().toISOString(),
       messageType: messageType,
       hasUpload: !!uploadedMidi,
-      requestedBars: requestedBars,
-      usingReferences: referenceLibrary.length > 0
+      requestedBars: requestedBars
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -377,14 +262,12 @@ const ChatBot = () => {
         message: currentInput,
         creativityLevel: creativityLevel,
         performanceMode: performanceMode,
-        requestedBars: requestedBars,
-        userId: USER_ID
+        requestedBars: requestedBars
       };
 
       if (uploadedMidi) {
         requestBody.editMode = true;
         requestBody.originalContent = uploadedMidi.textMidi;
-        requestBody.uploadedFileName = uploadedMidi.fileName;
       } else if (messageType === 'edit' && lastGeneration) {
         requestBody.editMode = true;
         requestBody.originalContent = lastGeneration;
@@ -418,8 +301,7 @@ const ChatBot = () => {
         barCount: data.barCount,
         mode: data.mode,
         editMode: data.editMode,
-        requestedBars: requestedBars,
-        usedFiles: data.usedFiles || 0
+        requestedBars: requestedBars
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -478,10 +360,10 @@ const ChatBot = () => {
 
   const SystemStatusBadge = ({ status }) => {
     const config = {
-      healthy: { icon: CheckCircle, color: colors.success, label: 'Ready' },
-      error: { icon: AlertCircle, color: colors.error, label: 'Offline' },
-      unknown: { icon: Loader2, color: colors.primary[500], label: 'Checking' }
-    }[status] || { icon: AlertCircle, color: colors.error, label: 'Unknown' };
+      healthy: { icon: CheckCircle, color: '#10b981', label: 'Ready' },
+      error: { icon: AlertCircle, color: '#ef4444', label: 'Offline' },
+      unknown: { icon: Loader2, color: '#64748b', label: 'Checking' }
+    }[status] || { icon: AlertCircle, color: '#ef4444', label: 'Unknown' };
 
     const Icon = config.icon;
 
@@ -506,19 +388,13 @@ const ChatBot = () => {
       return (
         <div className="flex justify-end mb-6">
           <div className="max-w-[90%] xs:max-w-[80%]">
-            <div className="flex items-center justify-end space-x-2 mb-2 flex-wrap">
-              {message.requestedBars && (
+            {message.requestedBars && (
+              <div className="flex justify-end mb-2">
                 <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                   {message.requestedBars} bars
                 </span>
-              )}
-              {message.usingReferences && (
-                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full flex items-center mt-1 xs:mt-0">
-                  <Library className="w-3 h-3 mr-1" />
-                  Using references
-                </span>
-              )}
-            </div>
+              </div>
+            )}
             <div className="bg-gray-900 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
               <div className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</div>
             </div>
@@ -574,12 +450,6 @@ const ChatBot = () => {
                 </div>
                 <div className="flex items-center space-x-3 text-xs text-gray-600">
                   <span className="font-medium">{message.barCount} bars</span>
-                  {message.usedFiles > 0 && (
-                    <span className="text-blue-600 flex items-center bg-blue-50 px-2 py-1 rounded-full">
-                      <Library className="w-3 h-3 mr-1" />
-                      {message.usedFiles} refs
-                    </span>
-                  )}
                 </div>
               </div>
             </div>
@@ -686,124 +556,6 @@ const ChatBot = () => {
     );
   };
 
-  const ReferenceLibraryPanel = () => {
-    if (!showLibrary) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4">
-        <div className="bg-white rounded-xl w-full max-w-2xl max-h-[95vh] sm:max-h-[80vh] flex flex-col shadow-2xl m-2">
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3 min-w-0">
-              <Library className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 flex-shrink-0" />
-              <div className="min-w-0">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-900 truncate">Reference Library</h2>
-                <p className="text-xs sm:text-sm text-gray-600 truncate">MIDI files used for style learning</p>
-              </div>
-            </div>
-            <button onClick={() => setShowLibrary(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 ml-2">
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-            {referenceLibrary.length === 0 ? (
-              <div className="text-center py-8 sm:py-12">
-                <Library className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
-                <p className="text-gray-600 mb-2 font-medium">No reference files</p>
-                <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto">
-                  Upload MIDI files to teach the AI your preferred musical style and patterns
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {referenceLibrary.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
-                      <FileMusic className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-gray-900 truncate">{file.displayName}</div>
-                        <div className="text-xs text-gray-500">
-                          {file.barCount} bars • Uploaded {new Date(file.uploadedAt).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-3">
-            <button
-              onClick={clearReferenceLibrary}
-              disabled={referenceLibrary.length === 0}
-              className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto order-2 sm:order-1"
-            >
-              Clear All
-            </button>
-            <button
-              onClick={() => referenceInputRef.current?.click()}
-              disabled={referenceLibrary.length >= 5}
-              className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto order-1 sm:order-2"
-            >
-              Add Reference
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const ReferenceInfoPanel = () => {
-    if (!showReferenceInfo) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4">
-        <div className="bg-white rounded-xl w-full max-w-2xl max-h-[95vh] overflow-y-auto shadow-2xl m-2">
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 sticky top-0 bg-white">
-            <div className="flex items-center space-x-3">
-              <Info className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 flex-shrink-0" />
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">About Reference Learning</h2>
-            </div>
-            <button onClick={() => setShowReferenceInfo(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 ml-2">
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-          
-          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-            <div>
-              <h3 className="text-sm sm:text-md font-semibold text-gray-900 mb-2 sm:mb-3">How Reference Learning Works</h3>
-              <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
-                Reference files are MIDI compositions that the AI analyzes to understand your preferred musical style. 
-                The system learns patterns, harmonies, rhythms, and structural elements from your references to create 
-                compositions that match your aesthetic preferences.
-              </p>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-              <h4 className="text-xs sm:text-sm font-semibold text-blue-900 mb-2">Best Practices</h4>
-              <ul className="text-xs sm:text-sm text-blue-800 space-y-1">
-                <li>• Upload 2-3 high-quality MIDI files in your preferred style</li>
-                <li>• Choose files with clear musical structure and instrumentation</li>
-                <li>• References work best when they share similar characteristics</li>
-                <li>• The AI learns tempo, dynamics, harmony, and rhythmic patterns</li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2">Technical Details</h4>
-              <p className="text-xs text-gray-600">
-                The system analyzes reference files for: tempo patterns, dynamic ranges, voice leading, 
-                harmonic progressions, rhythmic density, and structural organization. This analysis happens 
-                in real-time and influences all subsequent generation requests.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const MobileMenu = () => {
     if (!mobileMenuOpen) return null;
 
@@ -848,34 +600,7 @@ const ChatBot = () => {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-200 space-y-2">
-              <button
-                onClick={() => {
-                  setShowLibrary(true);
-                  setMobileMenuOpen(false);
-                }}
-                className="flex items-center space-x-3 w-full px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
-              >
-                <Library className="w-4 h-4" />
-                <span>Reference Library</span>
-                {referenceLibrary.length > 0 && (
-                  <span className="bg-gray-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ml-auto">
-                    {referenceLibrary.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowReferenceInfo(true);
-                  setMobileMenuOpen(false);
-                }}
-                className="flex items-center space-x-3 w-full px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
-              >
-                <Info className="w-4 h-4 text-gray-600" />
-                <span>About References</span>
-              </button>
-
+            <div className="pt-4 border-t border-gray-200">
               <button
                 onClick={handleNewChat}
                 className="flex items-center space-x-3 w-full px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
@@ -906,7 +631,7 @@ const ChatBot = () => {
         </div>
         
         <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Desktop Controls - Hidden on mobile */}
+          {/* Desktop Controls */}
           <div className="hidden lg:flex items-center space-x-3">
             <div className="flex items-center space-x-2">
               <label className="text-xs text-gray-600 font-medium">Mode:</label>
@@ -935,33 +660,8 @@ const ChatBot = () => {
             </div>
           </div>
 
-          {/* Reference Library Button */}
-          <button
-            onClick={() => setShowLibrary(true)}
-            className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors relative"
-          >
-            <Library className="w-4 h-4" />
-            <span className="hidden xs:inline">References</span>
-            {referenceLibrary.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-gray-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-                {referenceLibrary.length}
-              </span>
-            )}
-          </button>
-
-          {/* Info Button */}
-          <button
-            onClick={() => setShowReferenceInfo(true)}
-            className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title="About reference learning"
-          >
-            <Info className="w-4 h-4 text-gray-600" />
-          </button>
-
-          {/* Status */}
           <SystemStatusBadge status={systemStatus} />
 
-          {/* New Chat */}
           <button
             onClick={handleNewChat}
             className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
@@ -972,7 +672,6 @@ const ChatBot = () => {
         </div>
       </header>
 
-      {/* Mobile Menu */}
       <MobileMenu />
 
       {/* Main Chat Area */}
@@ -983,15 +682,8 @@ const ChatBot = () => {
               <div className="text-center mb-8 sm:mb-12">
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">Create Professional Music</h2>
                 <p className="text-gray-600 max-w-2xl text-base sm:text-lg mb-4 sm:mb-6">
-                  Describe your musical ideas and let AI generate professional MIDI compositions. 
-                  Upload reference files to guide the style and structure.
+                  Describe your musical ideas and let AI generate professional MIDI compositions.
                 </p>
-                {referenceLibrary.length > 0 && (
-                  <div className="inline-flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
-                    <Library className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span>Using {referenceLibrary.length} reference file(s) for style guidance</span>
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -1031,37 +723,19 @@ const ChatBot = () => {
                 onClick={removeUploadedMidi}
                 className="p-1 hover:bg-gray-200 rounded transition-colors flex-shrink-0 ml-2"
               >
-                <Trash2 className="w-4 h-4 text-gray-600" />
+                <X className="w-4 h-4 text-gray-600" />
               </button>
-            </div>
-          </div>
-        )}
-
-        {uploadingReference && (
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4">
-            <div className="flex items-center space-x-3 bg-blue-50 border border-blue-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3 mb-2 sm:mb-3 text-sm text-blue-800">
-              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-              <span>Adding to reference library...</span>
             </div>
           </div>
         )}
 
         <div className="max-w-4xl mx-auto p-4 sm:p-6">
           <div className="flex items-end space-x-2 sm:space-x-3 lg:space-x-4">
-            {/* Upload Button */}
             <input
               ref={fileInputRef}
               type="file"
               accept=".mid,.midi"
               onChange={handleFileChange}
-              className="hidden"
-            />
-
-            <input
-              ref={referenceInputRef}
-              type="file"
-              accept=".mid,.midi"
-              onChange={handleReferenceFileChange}
               className="hidden"
             />
             
@@ -1074,7 +748,6 @@ const ChatBot = () => {
               <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </button>
             
-            {/* Text Input */}
             <div className="flex-1 min-w-0">
               <textarea
                 ref={textareaRef}
@@ -1094,7 +767,6 @@ const ChatBot = () => {
               />
             </div>
             
-            {/* Action Buttons */}
             <div className="flex items-center space-x-1 sm:space-x-2">
               <button 
                 onClick={sendEditRequest}
@@ -1124,22 +796,17 @@ const ChatBot = () => {
             or{' '}
             <a href="https://onlinesequencer.net" target="_blank" rel="noopener noreferrer" className="px-1 sm:px-2 py-1 bg-gray-100 rounded text-gray-700 font-mono text-xs border border-gray-300">
               Online Sequencer
-            </a>{' '}
-            to play MIDI files.
+            </a>
           </div>
         </div>
       </footer>
 
-      {/* Modals */}
       {selectedMidiForView && (
         <MidiDetailModal 
           message={selectedMidiForView} 
           onClose={() => setSelectedMidiForView(null)} 
         />
       )}
-
-      <ReferenceLibraryPanel />
-      <ReferenceInfoPanel />
     </div>
   );
 };
