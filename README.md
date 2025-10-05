@@ -4,6 +4,8 @@
 
 ## ✨ Features
 
+ **💡 Workflow Revolution:** This AI can accomplish in minutes what would traditionally take a skilled musician 10+ years of piano study and music theory mastery to achieve. If you have strong theoretical knowledge but lack instrumental proficiency, this tool bridges that gap instantly.
+ 
 - **AI Music Generation**: Create professional MIDI compositions from text descriptions
 - **Reference Style Learning**: Upload MIDI files to teach AI your preferred musical style
 - **MIDI Editing**: Upload and edit existing MIDI files with AI assistance
@@ -11,9 +13,53 @@
 - **Professional Output**: Support for 1-200 bars with sophisticated harmony and dynamics
 - **Real-time Preview**: View MIDI notation before downloading
 
+
+## 🎨 Example: Orchestral Harmony Enhancement
+
+### Original MIDI (Before)
+![Original MIDI](images/before-midi.png)
+*Simple melody line (33 bars)*
+
+### AI-Enhanced Result (After)
+![Enhanced MIDI](images/after-midi.png)
+*Full orchestral arrangement with 5-part harmony*
+
+**Prompt Used:**
+Keep the main melody fully intact and positioned in the high register.
+Do not alter or revoice the melody in any way — it remains exactly as written.
+Add rich orchestral harmony layers beneath the melody, forming at least
+5-part harmony for a full ensemble texture.
+Maintain smooth voice leading and overall orchestral balance, ensuring
+a deep, lush harmonic texture throughout.
+Keep the total structure exactly 33 bars.
+Use cinematic or symphonic voicing principles:
+
+High range (D4–A6): Melody remains clear and dominant.
+Upper-mid range (G3–G5): Light harmonic or supportive lines.
+Middle range (C3–C5): Core harmonic foundation and color tones.
+Lower range (C2–C4): Deep harmonic reinforcement and root tones.
+Sub-low range (E1–C3): Optional octave or bass grounding.
+
+Keep the harmony openly spaced in lower registers and closer in upper
+registers for natural cinematic warmth.
+Preserve the melody as the clear focal point, while the underlying
+harmony moves slowly, legato, and dynamically supportive, never
+rhythmically intrusive.
+The final sound should be lush, emotive, and fully cinematic, maintaining
+clarity, warmth, and melodic dominance across all 33 bars.
+
+**Result:** The AI successfully added cinematic harmonic layers across 5 voices 
+while preserving the original melody's position and character, creating a 
+professional orchestral arrangement.
+
+---
+
 ## 🚀 Live Demo
 
-[https://your-app.vercel.app]
+🚀 Live Demo
+
+Frontend:  [https://ai-midi-generator.onrender.com/api]
+Backend API: [https://ai-midi-generator-six.vercel.app/]
 
 
 ## 🛠️ Tech Stack
@@ -134,31 +180,6 @@ rich harmonies, and dynamic crescendos
 - **Fast**: Quick generation (16 bars default)
 - **Balanced**: Quality/speed balance (32 bars)
 - **Quality**: Best results (48 bars)
-
-## 🐛 Troubleshooting
-
-### Backend Issues
-
-**Port already in use**:
-```bash
-# Kill process on port 5000
-lsof -ti:5000 | xargs kill -9  # macOS/Linux
-netstat -ano | findstr :5000   # Windows
-```
-
-**API Key errors**:
-- Verify your Gemini API key is valid
-- Check quota limits at [Google AI Studio](https://makersuite.google.com)
-
-### Frontend Issues
-
-**CORS errors**:
-- Ensure `FRONTEND_URL` is set correctly in Railway
-- Check browser console for exact error
-
-**Build failures**:
-- Clear node_modules: `rm -rf node_modules package-lock.json`
-- Reinstall: `npm install`
 
 ## 📊 API Endpoints
 
