@@ -5,7 +5,7 @@
 ## ✨ Features
 
  **💡 Workflow Revolution:** This AI can accomplish in minutes what would traditionally take a skilled musician 10+ years of piano study and music theory mastery to achieve. If you have strong theoretical knowledge but lack instrumental proficiency, this tool bridges that gap instantly.
- 
+
 - **AI Music Generation**: Create professional MIDI compositions from text descriptions
 - **Reference Style Learning**: Upload MIDI files to teach AI your preferred musical style
 - **MIDI Editing**: Upload and edit existing MIDI files with AI assistance
@@ -58,8 +58,8 @@ professional orchestral arrangement.
 
 🚀 Live Demo
 
-Frontend:  [https://ai-midi-generator.onrender.com/api]
-Backend API: [https://ai-midi-generator-six.vercel.app/]
+Frontend: [https://ai-midi-generator-six.vercel.app/]
+Backend API: [https://ai-midi-generator.onrender.com/api]
 
 
 ## 🛠️ Tech Stack
