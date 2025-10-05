@@ -211,6 +211,16 @@ Contributions are welcome! Please follow these steps:
 4. Push to branch: `git push origin feature-name`
 5. Submit pull request
 
+
+🧪 Technical Challenges Solved
+
+Custom MIDI Parser: Built from scratch to handle complex voice leading and dynamics
+AI Prompt Engineering: Iterative refinement for consistent, professional-quality output
+Reference Style Learning: Implemented pattern extraction from user-uploaded MIDI files
+Monorepo Deployment: Configured Vercel + Render for seamless full-stack deployment
+Real-time Validation: Client and server-side validation for notation correctness
+
+
 ## 📝 License
 
 This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
