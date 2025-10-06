@@ -42,6 +42,29 @@ const ChatBot = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Load messages from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('midiComposerMessages');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setMessages(parsed);
+        // Find last generation
+        const lastBot = [...parsed].reverse().find(m => m.type === 'bot' && m.content);
+        if (lastBot) setLastGeneration(lastBot.content);
+      } catch (e) {
+        console.error('Failed to restore messages:', e);
+      }
+    }
+  }, []);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('midiComposerMessages', JSON.stringify(messages));
+    }
+  }, [messages]);
+
   useEffect(() => {
     checkSystemHealth();
   }, []);
@@ -86,18 +109,18 @@ const ChatBot = () => {
     }
   };
 
-const extractBarCount = (text) => {
+  const extractBarCount = (text) => {
     if (!text) return null;
 
     let maxBars = 0;
 
-    // Priority 1: "Total: Bars X - Y" format (HIGHEST PRIORITY)
+    // Priority 1: "Total: Bars X - Y" format
     const totalBarsRangePattern = /total:?\s*bars?\s+(\d+)\s*[-–—]\s*(\d+)/i;
     const totalBarsMatch = text.match(totalBarsRangePattern);
     if (totalBarsMatch && totalBarsMatch[2]) {
       const count = parseInt(totalBarsMatch[2]);
       if (count > 0 && count <= 500) {
-        console.log(`✅ Frontend: "Total: Bars 1-${count}"`);
+        console.log(`Frontend: "Total: Bars 1-${count}"`);
         return count;
       }
     }
@@ -113,7 +136,7 @@ const extractBarCount = (text) => {
     }
 
     if (maxBars > 0) {
-      console.log(`✅ Frontend: Maximum bar range found: ${maxBars}`);
+      console.log(`Frontend: Maximum bar range found: ${maxBars}`);
       return maxBars;
     }
 
@@ -145,6 +168,7 @@ const extractBarCount = (text) => {
       setLastGeneration(null);
       setSelectedMidiForView(null);
       setMobileMenuOpen(false);
+      localStorage.removeItem('midiComposerMessages');
     }
   };
 
@@ -316,7 +340,19 @@ const extractBarCount = (text) => {
 
     } catch (error) {
       console.error('Request failed:', error);
-      addErrorMessage(error.message);
+      
+      // Enhanced error messages with helpful guidance
+      let errorContent = error.message;
+      
+      if (error.message.includes('failed') || error.message.includes('attempts')) {
+        errorContent = `Generation failed after multiple attempts.\n\nTry these:\n• Use a simpler prompt (e.g., "piano melody in C major, 8 bars")\n• Upload a simpler MIDI file (fewer tracks, shorter)\n• Reduce the number of bars requested\n• Try again in a moment`;
+      } else if (error.message.includes('timeout') || error.message.includes('network')) {
+        errorContent = `Network error.\n\nPlease check your connection and try again.`;
+      } else if (error.message.includes('500') || error.message.includes('Server error')) {
+        errorContent = `Server error occurred.\n\nTry:\n• Simplify your prompt\n• Request fewer bars\n• Wait a moment and try again`;
+      }
+      
+      addErrorMessage(errorContent);
     } finally {
       setIsLoading(false);
     }
@@ -411,7 +447,7 @@ const extractBarCount = (text) => {
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <div className="text-sm font-semibold text-red-900 mb-1">Error</div>
-                <div className="text-sm text-red-800">{message.content}</div>
+                <div className="text-sm text-red-800 whitespace-pre-wrap">{message.content}</div>
               </div>
             </div>
           </div>
@@ -617,7 +653,6 @@ const extractBarCount = (text) => {
 
   return (
     <div className="flex flex-col h-screen bg-white">
-      {/* Header */}
       <header className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-gray-200 bg-white">
         <div className="flex items-center space-x-3 sm:space-x-4">
           <button 
@@ -631,7 +666,6 @@ const extractBarCount = (text) => {
         </div>
         
         <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Desktop Controls */}
           <div className="hidden lg:flex items-center space-x-3">
             <div className="flex items-center space-x-2">
               <label className="text-xs text-gray-600 font-medium">Mode:</label>
@@ -674,7 +708,6 @@ const extractBarCount = (text) => {
 
       <MobileMenu />
 
-      {/* Main Chat Area */}
       <main className="flex-1 overflow-y-auto bg-gray-50">
         <div className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
           {messages.length === 0 && (
@@ -709,8 +742,6 @@ const extractBarCount = (text) => {
         </div>
       </main>
 
-      {/* Input Area */}
-      {/* Input Area */}
       <footer className="border-t border-gray-200 bg-white">
         {uploadedMidi && (
           <div className="max-w-4xl mx-auto px-3 sm:px-6 pt-3 sm:pt-4">
