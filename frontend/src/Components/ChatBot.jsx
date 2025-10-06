@@ -710,9 +710,10 @@ const extractBarCount = (text) => {
       </main>
 
       {/* Input Area */}
+      {/* Input Area */}
       <footer className="border-t border-gray-200 bg-white">
         {uploadedMidi && (
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-3 sm:pt-4">
+          <div className="max-w-4xl mx-auto px-3 sm:px-6 pt-3 sm:pt-4">
             <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3 mb-2 sm:mb-3">
               <div className="flex items-center space-x-2 sm:space-x-3 text-sm min-w-0">
                 <FileMusic className="w-4 h-4 text-gray-600 flex-shrink-0" />
@@ -729,8 +730,8 @@ const extractBarCount = (text) => {
           </div>
         )}
 
-        <div className="max-w-4xl mx-auto p-4 sm:p-6">
-          <div className="flex items-end space-x-2 sm:space-x-3 lg:space-x-4">
+        <div className="max-w-4xl mx-auto p-3 sm:p-6">
+          <div className="flex items-end space-x-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -741,11 +742,11 @@ const extractBarCount = (text) => {
             
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white border border-gray-300 hover:bg-gray-50 transition-colors flex-shrink-0"
+              className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-colors flex-shrink-0"
               disabled={isLoading}
               title="Upload MIDI for editing"
             >
-              <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+              <Upload className="w-[18px] h-[18px] sm:w-5 sm:h-5 text-gray-600" />
             </button>
             
             <div className="flex-1 min-w-0">
@@ -759,44 +760,57 @@ const extractBarCount = (text) => {
                     sendMessage();
                   }
                 }}
-                placeholder="Describe your musical idea... (e.g., 'Compose a 16-bar piano piece in C major with emotional melody')"
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-white border border-gray-300 rounded-lg sm:rounded-xl focus:border-gray-500 focus:ring-2 focus:ring-gray-200 focus:outline-none text-sm resize-none transition-all placeholder-gray-400"
+                placeholder="Describe your music..."
+                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-white border border-gray-300 rounded-lg focus:border-gray-500 focus:ring-2 focus:ring-gray-200 focus:outline-none text-[15px] sm:text-sm resize-none transition-all placeholder-gray-400"
                 disabled={isLoading}
                 rows={1}
-                style={{ minHeight: '40px', maxHeight: '120px' }}
+                style={{ minHeight: '42px', maxHeight: '120px' }}
               />
             </div>
             
-            <div className="flex items-center space-x-1 sm:space-x-2">
+            <div className="flex items-center space-x-1.5">
               <button 
                 onClick={sendEditRequest}
                 disabled={isLoading || !inputMessage.trim() || (!lastGeneration && !uploadedMidi)}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white border border-gray-300 hover:bg-gray-50 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
                 title="Edit last generation"
               >
-                <Edit3 className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Edit3 className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
               </button>
               
               <button 
                 onClick={() => sendMessage()}
                 disabled={isLoading || !inputMessage.trim()}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gray-900 hover:bg-gray-800 text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gray-900 hover:bg-gray-800 active:bg-gray-700 text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
                 title="Generate composition"
               >
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Send className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>
           
-          <div className="text-xs text-gray-500 mt-2 sm:mt-3 text-center">
-            Don't have a DAW? Use online MIDI players like{' '}
-            <a href="https://pianotify.com" target="_blank" rel="noopener noreferrer" className="px-1 sm:px-2 py-1 bg-gray-100 rounded text-gray-700 font-mono text-xs border border-gray-300">
-              Pianotify
-            </a>{' '}
-            or{' '}
-            <a href="https://onlinesequencer.net" target="_blank" rel="noopener noreferrer" className="px-1 sm:px-2 py-1 bg-gray-100 rounded text-gray-700 font-mono text-xs border border-gray-300">
-              Online Sequencer
-            </a>
+          <div className="text-[11px] sm:text-xs text-gray-500 mt-2.5 sm:mt-3 text-center px-2">
+            <div className="inline-block">
+              Don't have a DAW? Try free online players:
+            </div>
+            <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-0 sm:ml-1">
+              <a 
+                href="https://signal.vercel.app" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="inline-flex items-center px-2 py-1 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded text-gray-700 font-medium text-[11px] sm:text-xs border border-gray-300 transition-colors whitespace-nowrap"
+              >
+                Signal
+              </a>
+              <a 
+                href="https://onlinesequencer.net" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="inline-flex items-center px-2 py-1 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded text-gray-700 font-medium text-[11px] sm:text-xs border border-gray-300 transition-colors whitespace-nowrap"
+              >
+                Sequencer
+              </a>
+            </div>
           </div>
         </div>
       </footer>
