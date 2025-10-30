@@ -1,13 +1,3 @@
-
-
-
-
-
-
-
-
-
-
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import ChatBot from './Components/ChatBot';
 
@@ -185,3 +175,4 @@ const App = () => {
 };
 
 export default App;
+
