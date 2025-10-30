@@ -889,13 +889,65 @@ app.use((err, req, res, next) => {
   });
 });
 
+// const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => {
+//   console.log(`\n🎹 MIDI Backend (Stateless Mode) - Port ${PORT}`);
+//   console.log(`✅ No data storage - fresh on every request`);
+//   console.log(`✅ Client-side chat history only`);
+//   console.log(`✅ Retry strategy: 2x gemini-2.5-flash → 1x gemini-2.0-flash`);
+//   console.log(`✅ Max bars: 500 | Max payload: 100mb`);
+//   console.log(`✅ Max output tokens: 65,536 (long composition support)`);
+//   console.log(`\n🎵 Ready for musical compositions!`);
+// });
+
+
+
+
+
+const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+
+if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
+  console.log('🔄 Keep-alive enabled - pinging every 10 minutes');
+  
+  // Ping self every 10 minutes to stay awake
+  setInterval(async () => {
+    try {
+      const https = require('https');
+      const http = require('http');
+      const protocol = SELF_URL.startsWith('https') ? https : http;
+      
+      protocol.get(`${SELF_URL}/api/health`, (res) => {
+        if (res.statusCode === 200) {
+          console.log('✅ Keep-alive ping successful');
+        } else {
+          console.log(`⚠️ Keep-alive ping returned ${res.statusCode}`);
+        }
+      }).on('error', (err) => {
+        console.log('⚠️ Keep-alive ping failed:', err.message);
+      });
+    } catch (error) {
+      console.log('⚠️ Keep-alive error:', error.message);
+    }
+  }, 10 * 60 * 1000); // 10 minutes
+} else {
+  console.log('ℹ️ Keep-alive disabled (local development)');
+}
+
+// ✅ Updated app.listen with improved logging
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`\n🎹 MIDI Backend (Stateless Mode) - Port ${PORT}`);
-  console.log(`✅ No data storage - fresh on every request`);
-  console.log(`✅ Client-side chat history only`);
-  console.log(`✅ Retry strategy: 2x gemini-2.5-flash → 1x gemini-2.0-flash`);
-  console.log(`✅ Max bars: 500 | Max payload: 100mb`);
-  console.log(`✅ Max output tokens: 65,536 (long composition support)`);
+  console.log(`✓ No data storage - fresh on every request`);
+  console.log(`✓ Client-side chat history only`);
+  console.log(`✓ Retry strategy: 2x gemini-2.5-flash → 1x gemini-2.0-flash`);
+  console.log(`✓ Max bars: 500 | Max payload: 100mb`);
+  console.log(`✓ Max output tokens: 65,536 (long composition support)`);
+  
+  // Show environment info
+  if (process.env.RENDER_EXTERNAL_URL) {
+    console.log(`✓ External URL: ${process.env.RENDER_EXTERNAL_URL}`);
+    console.log(`✓ Keep-alive: ENABLED (pings every 10 min)`);
+  }
+  
   console.log(`\n🎵 Ready for musical compositions!`);
 });
