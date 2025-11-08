@@ -987,8 +987,8 @@ const app = express();
 
 // ✅ INCREASED LIMITS: Support for very long user prompts and compositions
 app.use(cors());
-app.use(express.json({ limit: '250mb' }));  // Increased from 100mb to 250mb
-app.use(express.urlencoded({ extended: true, limit: '250mb' }));  // Increased from 100mb to 250mb
+app.use(express.json({ limit: '250mb' }));
+app.use(express.urlencoded({ extended: true, limit: '250mb' }));
 
 const publicDir = path.join(__dirname, 'public');
 const generatedDir = path.join(publicDir, 'generated');
@@ -1008,6 +1008,36 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const validator = new MidiValidator();
 
 console.log('🎹 MIDI Backend - Stateless Mode (Long Composition Support) starting...');
+
+// ✅ FIXED: Serve static MIDI files with proper headers for download
+app.use('/generated', express.static(generatedDir, {
+  maxAge: '1h',
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.mid') || filePath.endsWith('.midi')) {
+      // Force download instead of inline display
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      // CORS headers
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, Content-Type, Content-Length');
+    }
+  }
+}));
+
+// ✅ Handle OPTIONS requests for CORS preflight
+app.options('/generated/*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, Content-Type, Content-Length');
+  res.setHeader('Access-Control-Max-Age', '3600');
+  res.sendStatus(200);
+});
 
 function extractBarCountFromPrompt(text) {
   if (!text) return null;
@@ -1157,7 +1187,7 @@ app.get('/api/health', (req, res) => {
     mode: 'stateless',
     storage: 'none',
     maxBars: 500,
-    maxPayload: '250mb',  // Updated
+    maxPayload: '250mb',
     services: {
       nodeBackend: 'healthy',
       geminiApi: process.env.GEMINI_API_KEY ? 'configured' : 'missing'
@@ -1233,7 +1263,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // ✅ NEW: Check prompt length with generous limit
-    const MAX_PROMPT_LENGTH = 50000;  // 50,000 characters (increased from implicit ~10k)
+    const MAX_PROMPT_LENGTH = 50000;
     if (message.length > MAX_PROMPT_LENGTH) {
       console.error(`❌ Prompt too long: ${message.length} chars (max: ${MAX_PROMPT_LENGTH})`);
       return res.status(400).json({ 
@@ -1419,15 +1449,6 @@ app.post('/api/chat', async (req, res) => {
 // Integrate MIDI routes
 app.use('/api', midiRoutes);
 
-app.use('/generated', express.static(generatedDir, {
-  maxAge: '1h',
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.mid')) {
-      res.setHeader('Content-Type', 'audio/midi');
-    }
-  }
-}));
-
 // Cleanup old generated files every hour
 setInterval(() => {
   try {
@@ -1496,14 +1517,15 @@ app.listen(PORT, () => {
   console.log(`✓ No data storage - fresh on every request`);
   console.log(`✓ Client-side chat history only`);
   console.log(`✓ Retry strategy: 2x gemini-2.5-flash → 1x gemini-2.0-flash`);
-  console.log(`✓ Max bars: 500 | Max payload: 250mb`);  // Updated
-  console.log(`✓ Max prompt length: 50,000 characters`);  // NEW
+  console.log(`✓ Max bars: 500 | Max payload: 250mb`);
+  console.log(`✓ Max prompt length: 50,000 characters`);
   console.log(`✓ Max output tokens: 65,536 (long composition support)`);
+  console.log(`✓ Static file serving: FIXED (force download with proper headers)`);
   
   // Show environment info
   if (process.env.RENDER_EXTERNAL_URL) {
     console.log(`✓ External URL: ${process.env.RENDER_EXTERNAL_URL}`);
-    console.log(`✓ Keep-alive: ENABLED (pings every 10 min)`)
+    console.log(`✓ Keep-alive: ENABLED (pings every 10 min)`);
   }
   
   console.log(`\n🎵 Ready for musical compositions!`);
