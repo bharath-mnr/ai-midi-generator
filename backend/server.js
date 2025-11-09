@@ -976,6 +976,8 @@ const path = require('path');
 const fs = require('fs');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+app.options('*', cors()); // Handle preflight requests
+
 // Import routes and utilities
 const midiRoutes = require('./src/routes/midiRoutes');
 const MidiToTextConverter = require('./src/utils/midiToText');
@@ -1194,19 +1196,43 @@ async function generateWithFallback(prompt, length, temperature, maxOutputTokens
   }
 }
 
+// app.get('/api/health', (req, res) => {
+//   res.json({
+//     status: 'healthy',
+//     mode: 'stateless',
+//     storage: 'none',
+//     maxBars: 500,
+//     maxPayload: '250mb',
+//     services: {
+//       nodeBackend: 'healthy',
+//       geminiApi: process.env.GEMINI_API_KEY ? 'configured' : 'missing'
+//     }
+//   });
+// });
+
+
+// backend/server.js - Update health endpoint
+
 app.get('/api/health', (req, res) => {
+  // ✅ Explicitly set CORS headers for health check
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  
   res.json({
     status: 'healthy',
     mode: 'stateless',
     storage: 'none',
     maxBars: 500,
-    maxPayload: '250mb',
+    maxPayload: '100mb',
+    timestamp: new Date().toISOString(),
     services: {
       nodeBackend: 'healthy',
       geminiApi: process.env.GEMINI_API_KEY ? 'configured' : 'missing'
     }
   });
 });
+
 
 // ✅ IMPROVED: Upload MIDI with better error handling
 app.post('/api/upload-midi', async (req, res) => {
