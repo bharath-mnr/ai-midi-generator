@@ -985,8 +985,21 @@ const { buildEnhancedPrompt, buildMidiEditPrompt } = require('./src/utils/enhanc
 
 const app = express();
 
-// ✅ INCREASED LIMITS: Support for very long user prompts and compositions
-app.use(cors());
+// // ✅ INCREASED LIMITS: Support for very long user prompts and compositions
+// app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:8080',
+    'https://midi-generator-seven.vercel.app',  // ✅ ADD YOUR VERCEL URL
+    'https://midi-generator-backend.onrender.com'  // ✅ ADD YOUR JAVA BACKEND
+  ],
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json({ limit: '250mb' }));
 app.use(express.urlencoded({ extended: true, limit: '250mb' }));
 
