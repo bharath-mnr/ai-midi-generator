@@ -988,6 +988,7 @@ const app = express();
 // ✅ CORS Configuration with specific origins
 const allowedOrigins = [
   'https://midi-generator-seven.vercel.app',
+  'https://ai-midi-generator-six.vercel.app',
   'https://midi-generator-backend.onrender.com',
   'http://localhost:5173',
   'http://localhost:5137',
